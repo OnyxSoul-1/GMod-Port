@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="./style.css"/>
     
     <script>
-        // 1. FORCE the missing function onto the window object so Unity sees it
+        // 1. Define the missing Unity function on the global window object
         window.LogStyledMessage = function(message, style) {
-            console.log(message);
+            console.log(message); // Just print to console instead of crashing
         };
 
         // 2. Fake Yandex SDK
@@ -24,7 +24,7 @@
             getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
         };
 
-        // 3. Fake YG2
+        // 3. Fake Yandex Interface calls
         window.YG2Instance = function() {};
     </script>
     <script src="./sdk.js"></script>
@@ -47,9 +47,8 @@
         </div>
     </div>
 
-    <!-- MERGER SCRIPT & UNITY BOOTSTRAP -->
+    <!-- SPLIT FILE MERGER -->
     <script>
-        // Catch the split .wasm files
         const originalFetch = window.fetch;
         window.fetch = async function(url, options) {
             const urlStr = url.toString();
@@ -79,7 +78,10 @@
             }
             return originalFetch(url, options);
         };
+    </script>
 
+    <!-- UNITY BOOTSTRAP -->
+    <script>
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/1.4.loader.js";
         
