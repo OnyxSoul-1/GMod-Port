@@ -122,8 +122,34 @@ html, body { padding: 0; margin: 0; overflow: hidden; height: 100%; width: 100%;
 
 <!-- SPLIT FILE MERGER -->
 <script>
+// Folder where the .bundle files live. If the game still can't find them,
+// check your repo and change this one line (see instructions).
+const BUNDLE_BASE = "StreamingAssets/aa/WebGL/";
+
+// The game asks for "<Undefined>/something.bundle" because the Yandex server
+// path is missing. Point those requests to the local bundle folder instead.
+function fixBundleUrl(u) {
+  const m = u.match(/(<|%3C)Undefined(>|%3E)\//i);
+  if (!m) return u;
+  const rest = u.substring(m.index + m[0].length);
+  return BUNDLE_BASE + rest;
+}
+
+const originalXhrOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function(method, url) {
+  const args = Array.prototype.slice.call(arguments);
+  args[1] = fixBundleUrl(String(url));
+  return originalXhrOpen.apply(this, args);
+};
+
 const originalFetch = window.fetch;
 window.fetch = async function(url, options) {
+if (typeof url === "string" || url instanceof URL) {
+  url = fixBundleUrl(url.toString());
+} else if (url instanceof Request) {
+  const fixedReqUrl = fixBundleUrl(url.url);
+  if (fixedReqUrl !== url.url) url = new Request(fixedReqUrl, url);
+}
 const urlStr = url.toString();
 if (urlStr.endsWith('1.4.wasm.br')) {
 try {
