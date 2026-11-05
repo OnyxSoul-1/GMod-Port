@@ -11,6 +11,23 @@
 window.LogStyledMessage = function(message, style) { console.log(message); };
 window.YG2Instance = function() {};
 
+// InitGame: called by the game at startup. Waits for the Unity instance,
+// then tells the game the (fake) SDK is ready. Best guess, may need adjusting.
+window.myGameInstance = null;
+window.InitGame = function() {
+  console.log("InitGame called");
+  const timer = setInterval(function() {
+    if (window.myGameInstance) {
+      clearInterval(timer);
+      try {
+        window.myGameInstance.SendMessage('YG2Instance', 'SetInitializationSDK');
+      } catch (e) {
+        console.warn("SetInitializationSDK failed:", e);
+      }
+    }
+  }, 100);
+};
+
 // Fake data variables
 window.environmentData = '{"language":"en","domain":"com","deviceType":"desktop"}';
 window.playerData = '{"playerAuth":"rejected","playerName":"unauthorized"}';
@@ -160,6 +177,7 @@ script.onload = () => {
 createUnityInstance(canvas, config, (progress) => {
 spinner.innerText = `Loading... ${Math.round(progress * 100)}%`;
 }).then((unityInstance) => {
+window.myGameInstance = unityInstance;
 loadingCover.style.display = "none";
 canvas.focus();
 }).catch((message) => {
