@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
     <link rel="stylesheet" href="./style.css"/>
     
-    <!-- Fake Yandex SDK to prevent crashes -->
+    <!-- Fake Yandex SDK -->
     <script>
         window.YaGames = {
             init: () => Promise.resolve({
@@ -19,8 +19,6 @@
             getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
         };
     </script>
-    
-    <!-- Local SDK -->
     <script src="./sdk.js"></script>
 
     <style>
@@ -41,11 +39,49 @@
         </div>
     </div>
 
+    <!-- 1-4 MERGER SCRIPT -->
+    <script>
+        const originalFetch = window.fetch;
+        window.fetch = async function(url, options) {
+            const urlStr = url.toString();
+            if (urlStr.endsWith('1.4.wasm.br')) {
+                try {
+                    // Explicitly fetch the 4 parts you created
+                    const parts = await Promise.all([
+                        originalFetch('./Build/1.4.wasm.br.part1').then(r => r.arrayBuffer()),
+                        originalFetch('./Build/1.4.wasm.br.part2').then(r => r.arrayBuffer()),
+                        originalFetch('./Build/1.4.wasm.br.part3').then(r => r.arrayBuffer()),
+                        originalFetch('./Build/1.4.wasm.br.part4').then(r => r.arrayBuffer())
+                    ]);
+                    
+                    // Merge them into one giant ArrayBuffer
+                    const totalLength = parts.reduce((acc, val) => acc + val.byteLength, 0);
+                    const merged = new Uint8Array(totalLength);
+                    let offset = 0;
+                    for (const part of parts) {
+                        merged.set(new Uint8Array(part), offset);
+                        offset += part.byteLength;
+                    }
+                    
+                    // Return to Unity as a valid WebAssembly file
+                    return new Response(merged, {
+                        status: 200,
+                        headers: new Headers({ 'Content-Type': 'application/wasm' })
+                    });
+                } catch (e) {
+                    console.error("Merge failed:", e);
+                    return originalFetch(url, options);
+                }
+            }
+            return originalFetch(url, options);
+        };
+    </script>
+
+    <!-- UNITY BOOTSTRAP -->
     <script>
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/1.4.loader.js";
         
-        // Pointing to the .br files (GitHub Pages will decompress them)
         const config = {
             dataUrl: buildUrl + "/1.4.data.br",           
             frameworkUrl: buildUrl + "/1.4.framework.js.br", 
