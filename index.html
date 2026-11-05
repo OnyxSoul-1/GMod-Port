@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="./style.css"/>
+    
+    <!-- Fake Yandex SDK to prevent crashes -->
+    <script>
+        window.YaGames = {
+            init: () => Promise.resolve({
+                features: { LoadingAPI: { ready: () => {} } },
+                adv: { showFullscreenAdv: (opts) => { if(opts && opts.callbacks && opts.callbacks.onClose) opts.callbacks.onClose(); } },
+                environment: { i18n: { lang: 'en' } },
+                player: { getData: () => Promise.resolve({}), setData: () => Promise.resolve(), isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' },
+                getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
+            }),
+            getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
+        };
+    </script>
+    
+    <!-- Local SDK -->
+    <script src="./sdk.js"></script>
+
+    <style>
+        canvas:focus { outline: none; }
+        html, body { padding: 0; margin: 0; overflow: hidden; height: 100%; width: 100%; background-color: black; }
+        #unity-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+        #unity-canvas { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body class="dark">
+    <div id="unity-container">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+    </div>
+    
+    <div id="loading-cover" style="display:block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 10;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-family: sans-serif;">
+            <div class="spinner" style="font-size: 20px;">Loading GMode Port...</div>
+        </div>
+    </div>
+
+    <script>
+        const buildUrl = "Build";
+        const loaderUrl = buildUrl + "/1.4.loader.js";
+        
+        // Pointing to the .br files (GitHub Pages will decompress them)
+        const config = {
+            dataUrl: buildUrl + "/1.4.data.br",           
+            frameworkUrl: buildUrl + "/1.4.framework.js.br", 
+            codeUrl: buildUrl + "/1.4.wasm.br",           
+            streamingAssetsUrl: "StreamingAssets",     
+            companyName: "DefaultCompany",
+            productName: "sandbox",
+            productVersion: "0.1.0"
+        };
+
+        const canvas = document.querySelector("#unity-canvas");
+        const loadingCover = document.querySelector("#loading-cover");
+        const spinner = document.querySelector('.spinner');
+
+        const script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+                spinner.innerText = `Loading... ${Math.round(progress * 100)}%`;
+            }).then((unityInstance) => {
+                loadingCover.style.display = "none";
+                canvas.focus();
+            }).catch((message) => {
+                console.error(message);
+                spinner.innerText = "Error loading game. Check console (F12)";
+            });
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
