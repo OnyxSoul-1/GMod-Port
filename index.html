@@ -10,6 +10,46 @@ canvas:focus { outline: none; }
 html, body { padding: 0; margin: 0; overflow: hidden; overscroll-behavior: none; user-select: none; height: 100%; background: #000; }
 </style>
 
+<!-- Shows errors on screen with a Copy button (delete this block when the game works) -->
+<script>
+(function () {
+  const lines = [];
+  let box, text;
+  function render() {
+    if (!document.body) return;
+    if (!box) {
+      box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:45%;overflow:auto;background:rgba(0,0,0,.88);color:#fff;font:12px monospace;padding:6px;z-index:99999;';
+      const copy = document.createElement('button');
+      copy.textContent = 'Copy errors';
+      copy.style.cssText = 'margin-right:8px;padding:6px 10px;font-size:14px;';
+      copy.onclick = function () {
+        const t = lines.join('\n');
+        if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
+        else { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+        copy.textContent = 'Copied!';
+        setTimeout(() => copy.textContent = 'Copy errors', 1500);
+      };
+      const hide = document.createElement('button');
+      hide.textContent = 'Hide';
+      hide.style.cssText = 'padding:6px 10px;font-size:14px;';
+      hide.onclick = () => box.style.display = 'none';
+      text = document.createElement('pre');
+      text.style.cssText = 'white-space:pre-wrap;margin:6px 0 0;';
+      box.append(copy, hide, text);
+      document.body.appendChild(box);
+    }
+    text.textContent = lines.slice(0, 40).join('\n');
+  }
+  function add(msg) { lines.push(String(msg).slice(0, 600)); render(); }
+  const oErr = console.error;
+  console.error = function () { add(Array.from(arguments).join(' ')); oErr.apply(console, arguments); };
+  window.addEventListener('error', e => add('ERROR: ' + e.message));
+  window.addEventListener('unhandledrejection', e => add('ERROR: ' + (e.reason && e.reason.message || e.reason)));
+  document.addEventListener('DOMContentLoaded', render);
+})();
+</script>
+
 <!-- Joins the 4 split parts of the wasm file back into one file -->
 <script>
 const originalFetch = window.fetch;
