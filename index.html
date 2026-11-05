@@ -6,14 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
     <link rel="stylesheet" href="./style.css"/>
     
-    <!-- Yandex SDK Mock & Functions -->
     <script>
-        // 1. The missing function Unity is looking for
-        function LogStyledMessage(message, style = 'color: #FFDF73; background-color: #454545') {
-            console.log('%c' + message, style);
-        }
+        // 1. FORCE the missing function onto the window object so Unity sees it
+        window.LogStyledMessage = function(message, style) {
+            console.log(message);
+        };
 
-        // 2. The fake SDK
+        // 2. Fake Yandex SDK
         window.YaGames = {
             init: () => Promise.resolve({
                 features: { LoadingAPI: { ready: () => {} } },
@@ -24,11 +23,9 @@
             }),
             getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
         };
-        
-        // 3. Fake YG2 Instance (Unity calls this)
-        function YG2Instance(method, arg) {
-            // Do nothing, just absorb the call
-        }
+
+        // 3. Fake YG2
+        window.YG2Instance = function() {};
     </script>
     <script src="./sdk.js"></script>
 
@@ -50,8 +47,9 @@
         </div>
     </div>
 
-    <!-- 1-4 MERGER SCRIPT -->
+    <!-- MERGER SCRIPT & UNITY BOOTSTRAP -->
     <script>
+        // Catch the split .wasm files
         const originalFetch = window.fetch;
         window.fetch = async function(url, options) {
             const urlStr = url.toString();
@@ -63,7 +61,6 @@
                         originalFetch('./Build/1.4.wasm.br.part3').then(r => r.arrayBuffer()),
                         originalFetch('./Build/1.4.wasm.br.part4').then(r => r.arrayBuffer())
                     ]);
-                    
                     const totalLength = parts.reduce((acc, val) => acc + val.byteLength, 0);
                     const merged = new Uint8Array(totalLength);
                     let offset = 0;
@@ -71,7 +68,6 @@
                         merged.set(new Uint8Array(part), offset);
                         offset += part.byteLength;
                     }
-                    
                     return new Response(merged, {
                         status: 200,
                         headers: new Headers({ 'Content-Type': 'application/wasm' })
@@ -83,10 +79,7 @@
             }
             return originalFetch(url, options);
         };
-    </script>
 
-    <!-- UNITY BOOTSTRAP -->
-    <script>
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/1.4.loader.js";
         
