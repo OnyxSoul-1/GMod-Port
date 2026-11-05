@@ -7,10 +7,19 @@
     <link rel="stylesheet" href="./style.css"/>
     
     <script>
-        // 1. Define the missing Unity function on the global window object
-        window.LogStyledMessage = function(message, style) {
-            console.log(message); // Just print to console instead of crashing
-        };
+        // 1. Define ALL missing variables and functions the engine expects
+        window.LogStyledMessage = function(message, style) { console.log(message); };
+        window.YG2Instance = function() {};
+
+        // Fake data variables
+        window.environmentData = '{"language":"en","domain":"com","deviceType":"desktop"}';
+        window.playerData = '{"playerAuth":"rejected","playerName":"unauthorized"}';
+        window.cloudSaves = 'no data';
+        
+        // Fake loaders
+        window.RequestingEnvironmentData = function() { return Promise.resolve(window.environmentData); };
+        window.InitPlayer = function() { return Promise.resolve(window.playerData); };
+        window.LoadCloud = function() { return Promise.resolve(window.cloudSaves); };
 
         // 2. Fake Yandex SDK
         window.YaGames = {
@@ -23,9 +32,6 @@
             }),
             getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
         };
-
-        // 3. Fake Yandex Interface calls
-        window.YG2Instance = function() {};
     </script>
     <script src="./sdk.js"></script>
 
