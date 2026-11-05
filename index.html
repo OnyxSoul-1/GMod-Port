@@ -1,124 +1,173 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta charset="utf-8"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-    <link rel="stylesheet" href="./style.css"/>
-    
-    <script>
-        // 1. Define ALL missing variables and functions the engine expects
-        window.LogStyledMessage = function(message, style) { console.log(message); };
-        window.YG2Instance = function() {};
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<link rel="stylesheet" href="./style.css"/>
 
-        // Fake data variables
-        window.environmentData = '{"language":"en","domain":"com","deviceType":"desktop"}';
-        window.playerData = '{"playerAuth":"rejected","playerName":"unauthorized"}';
-        window.cloudSaves = 'no data';
-        
-        // Fake loaders
-        window.RequestingEnvironmentData = function() { return Promise.resolve(window.environmentData); };
-        window.InitPlayer = function() { return Promise.resolve(window.playerData); };
-        window.LoadCloud = function() { return Promise.resolve(window.cloudSaves); };
+<script>
+// 1. Define ALL missing variables and functions the engine expects
+window.LogStyledMessage = function(message, style) { console.log(message); };
+window.YG2Instance = function() {};
 
-        // 2. Fake Yandex SDK
-        window.YaGames = {
-            init: () => Promise.resolve({
-                features: { LoadingAPI: { ready: () => {} } },
-                adv: { showFullscreenAdv: (opts) => { if(opts && opts.callbacks && opts.callbacks.onClose) opts.callbacks.onClose(); } },
-                environment: { i18n: { lang: 'en' } },
-                player: { getData: () => Promise.resolve({}), setData: () => Promise.resolve(), isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' },
-                getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
-            }),
-            getPlayer: () => Promise.resolve({ isAuthorized: () => false, getName: () => 'Player', getUniqueID: () => '123', getPhoto: () => '', getPayingStatus: () => 'unknown' })
-        };
-    </script>
-    <script src="./sdk.js"></script>
+// Fake data variables
+window.environmentData = '{"language":"en","domain":"com","deviceType":"desktop"}';
+window.playerData = '{"playerAuth":"rejected","playerName":"unauthorized"}';
+window.cloudSaves = 'no data';
 
-    <style>
-        canvas:focus { outline: none; }
-        html, body { padding: 0; margin: 0; overflow: hidden; height: 100%; width: 100%; background-color: black; }
-        #unity-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
-    </style>
+// Fake loaders
+window.RequestingEnvironmentData = function() { return Promise.resolve(window.environmentData); };
+window.InitPlayer = function() { return Promise.resolve(window.playerData); };
+window.LoadCloud = function() { return Promise.resolve(window.cloudSaves); };
+
+// 2. Fake Yandex SDK (defines ysdk, which the game reads directly)
+const fakePlayer = {
+  isAuthorized: () => false,
+  getName: () => 'Player',
+  getUniqueID: () => '123',
+  getPhoto: () => '',
+  getPayingStatus: () => 'unknown',
+  getData: () => Promise.resolve({}),
+  setData: () => Promise.resolve(),
+  getStats: () => Promise.resolve({}),
+  setStats: () => Promise.resolve()
+};
+
+const fakeSdk = {
+  environment: {
+    app: { id: '0' },
+    browser: { lang: 'en' },
+    i18n: { lang: 'en', tld: 'com' },
+    payload: ''
+  },
+  deviceInfo: {
+    type: 'desktop',
+    isMobile: () => false,
+    isDesktop: () => true,
+    isTablet: () => false,
+    isTV: () => false
+  },
+  features: {
+    LoadingAPI: { ready: () => {} },
+    GameplayAPI: { start: () => {}, stop: () => {} }
+  },
+  adv: {
+    showFullscreenAdv: (o) => { o && o.callbacks && o.callbacks.onClose && o.callbacks.onClose(true); },
+    showRewardedVideo: (o) => {
+      if (o && o.callbacks) {
+        o.callbacks.onOpen && o.callbacks.onOpen();
+        o.callbacks.onRewarded && o.callbacks.onRewarded();
+        o.callbacks.onClose && o.callbacks.onClose();
+      }
+    },
+    getBannerAdvStatus: () => Promise.resolve({ stickyAdvIsShowing: false }),
+    showBannerAdv: () => Promise.resolve(),
+    hideBannerAdv: () => Promise.resolve()
+  },
+  getPlayer: () => Promise.resolve(fakePlayer),
+  getStorage: () => Promise.resolve(window.localStorage),
+  getFlags: () => Promise.resolve({}),
+  isAvailableMethod: () => Promise.resolve(false),
+  feedback: {
+    canReview: () => Promise.resolve({ value: false }),
+    requestReview: () => Promise.resolve({ feedbackSent: false })
+  },
+  shortcut: { canShowPrompt: () => Promise.resolve({ canShow: false }) },
+  on: () => {}, off: () => {}, dispatchEvent: () => {}
+};
+
+window.ysdk = fakeSdk;
+window.YaGames = { init: () => Promise.resolve(fakeSdk) };
+</script>
+
+<!-- sdk.js removed on purpose: when the game runs inside an iframe (like itch.io),
+     the real Yandex loader replaces the fake YaGames above and breaks it. -->
+
+<style>
+canvas:focus { outline: none; }
+html, body { padding: 0; margin: 0; overflow: hidden; height: 100%; width: 100%; background-color: black; }
+#unity-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+#unity-canvas { width: 100%; height: 100%; display: block; }
+</style>
 </head>
+
 <body class="dark">
-    <div id="unity-container">
-        <canvas id="unity-canvas" tabindex="-1"></canvas>
-    </div>
-    
-    <div id="loading-cover" style="display:block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 10;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-family: sans-serif;">
-            <div class="spinner" style="font-size: 20px;">Loading GMode Port...</div>
-        </div>
-    </div>
+<div id="unity-container">
+<canvas id="unity-canvas" tabindex="-1"></canvas>
+</div>
 
-    <!-- SPLIT FILE MERGER -->
-    <script>
-        const originalFetch = window.fetch;
-        window.fetch = async function(url, options) {
-            const urlStr = url.toString();
-            if (urlStr.endsWith('1.4.wasm.br')) {
-                try {
-                    const parts = await Promise.all([
-                        originalFetch('./Build/1.4.wasm.br.part1').then(r => r.arrayBuffer()),
-                        originalFetch('./Build/1.4.wasm.br.part2').then(r => r.arrayBuffer()),
-                        originalFetch('./Build/1.4.wasm.br.part3').then(r => r.arrayBuffer()),
-                        originalFetch('./Build/1.4.wasm.br.part4').then(r => r.arrayBuffer())
-                    ]);
-                    const totalLength = parts.reduce((acc, val) => acc + val.byteLength, 0);
-                    const merged = new Uint8Array(totalLength);
-                    let offset = 0;
-                    for (const part of parts) {
-                        merged.set(new Uint8Array(part), offset);
-                        offset += part.byteLength;
-                    }
-                    return new Response(merged, {
-                        status: 200,
-                        headers: new Headers({ 'Content-Type': 'application/wasm' })
-                    });
-                } catch (e) {
-                    console.error("Merge failed:", e);
-                    return originalFetch(url, options);
-                }
-            }
-            return originalFetch(url, options);
-        };
-    </script>
+<div id="loading-cover" style="display:block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 10;">
+<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-family: sans-serif;">
+<div class="spinner" style="font-size: 20px;">Loading GMode Port...</div>
+</div>
+</div>
 
-    <!-- UNITY BOOTSTRAP -->
-    <script>
-        const buildUrl = "Build";
-        const loaderUrl = buildUrl + "/1.4.loader.js";
-        
-        const config = {
-            dataUrl: buildUrl + "/1.4.data.br",           
-            frameworkUrl: buildUrl + "/1.4.framework.js.br", 
-            codeUrl: buildUrl + "/1.4.wasm.br",           
-            streamingAssetsUrl: "StreamingAssets",     
-            companyName: "DefaultCompany",
-            productName: "sandbox",
-            productVersion: "0.1.0"
-        };
+<!-- SPLIT FILE MERGER -->
+<script>
+const originalFetch = window.fetch;
+window.fetch = async function(url, options) {
+const urlStr = url.toString();
+if (urlStr.endsWith('1.4.wasm.br')) {
+try {
+const parts = await Promise.all([
+originalFetch('./Build/1.4.wasm.br.part1').then(r => r.arrayBuffer()),
+originalFetch('./Build/1.4.wasm.br.part2').then(r => r.arrayBuffer()),
+originalFetch('./Build/1.4.wasm.br.part3').then(r => r.arrayBuffer()),
+originalFetch('./Build/1.4.wasm.br.part4').then(r => r.arrayBuffer())
+]);
+const totalLength = parts.reduce((acc, val) => acc + val.byteLength, 0);
+const merged = new Uint8Array(totalLength);
+let offset = 0;
+for (const part of parts) {
+merged.set(new Uint8Array(part), offset);
+offset += part.byteLength;
+}
+return new Response(merged, {
+status: 200,
+headers: new Headers({ 'Content-Type': 'application/wasm' })
+});
+} catch (e) {
+console.error("Merge failed:", e);
+return originalFetch(url, options);
+}
+}
+return originalFetch(url, options);
+};
+</script>
 
-        const canvas = document.querySelector("#unity-canvas");
-        const loadingCover = document.querySelector("#loading-cover");
-        const spinner = document.querySelector('.spinner');
+<!-- UNITY BOOTSTRAP -->
+<script>
+const buildUrl = "Build";
+const loaderUrl = buildUrl + "/1.4.loader.js";
+const config = {
+dataUrl: buildUrl + "/1.4.data.br",
+frameworkUrl: buildUrl + "/1.4.framework.js.br",
+codeUrl: buildUrl + "/1.4.wasm.br",
+streamingAssetsUrl: "StreamingAssets",
+companyName: "DefaultCompany",
+productName: "sandbox",
+productVersion: "0.1.0"
+};
 
-        const script = document.createElement("script");
-        script.src = loaderUrl;
-        script.onload = () => {
-            createUnityInstance(canvas, config, (progress) => {
-                spinner.innerText = `Loading... ${Math.round(progress * 100)}%`;
-            }).then((unityInstance) => {
-                loadingCover.style.display = "none";
-                canvas.focus();
-            }).catch((message) => {
-                console.error(message);
-                spinner.innerText = "Error loading game. Check console (F12)";
-            });
-        };
-        document.body.appendChild(script);
-    </script>
+const canvas = document.querySelector("#unity-canvas");
+const loadingCover = document.querySelector("#loading-cover");
+const spinner = document.querySelector('.spinner');
+
+const script = document.createElement("script");
+script.src = loaderUrl;
+script.onload = () => {
+createUnityInstance(canvas, config, (progress) => {
+spinner.innerText = `Loading... ${Math.round(progress * 100)}%`;
+}).then((unityInstance) => {
+loadingCover.style.display = "none";
+canvas.focus();
+}).catch((message) => {
+console.error(message);
+spinner.innerText = "Error loading game. Check console (F12)";
+});
+};
+document.body.appendChild(script);
+</script>
 </body>
 </html>
