@@ -84,42 +84,28 @@ window.fetch = async function (url, options) {
 </div>
 
 <script>
-// ---------- Settings you may need to change ----------
-// The game asks Yandex for a setting with this name. Its value is the web address
-// of the folder that holds the .bundle files (and catalog_0.1.0.bin / .hash).
-const FLAG_NAME = "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH";
+// ---------- The settings the original game gets from Yandex ("flags") ----------
+// The game reads its file address from a flag named VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_4
+// (the last part is the game version). Here it points to YOUR folder instead of Yandex's server.
 const REMOTE_BASE = new URL("StreamingAssets/aa/WebGL", location.href).href;
-// We do not know exactly how the original stores this value, so the page tries
-// several formats by itself. If the game says "Can't get version dependent remote
-// addressables path", the page reloads and tries the next format (up to 6 tries).
-// You can also force one by adding ?fmt=1 (or 2, 3...) to the end of the web address.
-const FORMATS = [
-  u => u,                                  // 0: plain address
-  u => JSON.stringify({ "1_4": u }),       // 1: {"1_4":"address"}
-  u => '1_4=' + u,                         // 2: 1_4=address
-  u => '1_4|' + u,                         // 3: 1_4|address
-  u => '1_4;' + u,                         // 4: 1_4;address
-  u => JSON.stringify([{ "1_4": u }])      // 5: [{"1_4":"address"}]
-];
-let fmt = 0;
-try {
-  const q = new URLSearchParams(location.search).get('fmt');
-  fmt = parseInt(q !== null ? q : (sessionStorage.getItem('fmt') || '0'), 10) || 0;
-} catch (e) {}
-fmt = Math.min(Math.max(fmt, 0), FORMATS.length - 1);
-const FLAG_VALUE = FORMATS[fmt](REMOTE_BASE);
-if (window.__boxAdd) window.__boxAdd('Flag format in use: ' + fmt + '  value: ' + FLAG_VALUE);
-
-const _prevConsoleError = console.error;
-console.error = function () {
-  const m = Array.from(arguments).join(' ');
-  if (m.indexOf("Can't get version dependent") !== -1 && fmt + 1 < FORMATS.length) {
-    setTimeout(function () {
-      try { sessionStorage.setItem('fmt', String(fmt + 1)); } catch (e) {}
-      location.href = location.pathname + '?fmt=' + (fmt + 1);
-    }, 2500);
-  }
-  _prevConsoleError.apply(console, arguments);
+const FLAGS = {
+  "MOBILE_TOUCH_PANEL_Y_AXIS_MULTIPLIER": "0.5",
+  "GAMEPLAY_ADV_INTERVAL": "240",
+  "GAMEPLAY_FIRST_ADV_INTERVAL": "90",
+  "MOUSE_SENSITIVITY_MULTIPLIER": "0.3",
+  "MOBILE_TOUCH_PANEL_SMOOTH_FACTOR": "18",
+  "MOBILE_TOUCH_PANEL_SENSITIVITY_MULTIPLIER": "0.175",
+  "FLAG_IS_COMMUNITY_BUTTON_ACTIVE": "true",
+  "FLAG_IS_ALL_GAMES_BUTTON_ACTIVE": "true",
+  "FLAG_COMMUNITY_LINK": "https://t.me/ItsJasonStudio",
+  "FLAG_ALL_GAMES_LINK": "https://yandex.ru/games/developer/97789",
+  "USE_CUSTOM_REMOTE_ADDRESSABLES_PATH": "false",
+  "CUSTOM_REMOTE_ADDRESSABLES_PATH": REMOTE_BASE,
+  "REMOTE_ADDRESSABLES_URL": REMOTE_BASE,
+  "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_1": REMOTE_BASE,
+  "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_2": REMOTE_BASE,
+  "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_3": REMOTE_BASE,
+  "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_4": REMOTE_BASE
 };
 
 // ---------- Fake Yandex Games, same variables and functions the original page has ----------
@@ -182,12 +168,12 @@ function fakeYandexInit() {
     environment: { i18n: { lang: 'en', tld: 'com' }, app: { id: '448583' }, browser: { lang: 'en' }, payload: '' },
     features: { LoadingAPI: { ready() {} }, GameplayAPI: { start() {}, stop() {} } },
     on() {},
-    getFlags: () => Promise.resolve({ [FLAG_NAME]: FLAG_VALUE })
+    getFlags: () => Promise.resolve(FLAGS)
   };
   RequestingEnvironmentData();
   InitPlayer();
   LoadCloud();
-  flasgsData = JSON.stringify({ names: [FLAG_NAME], values: [FLAG_VALUE] });
+  flasgsData = JSON.stringify({ names: Object.keys(FLAGS), values: Object.values(FLAGS) });
   initYSDK = true;
   LogStyledMessage('Fake Yandex SDK ready. Files are loaded from: ' + REMOTE_BASE);
 }
