@@ -42,6 +42,7 @@ html, body { padding: 0; margin: 0; overflow: hidden; overscroll-behavior: none;
     text.textContent = lines.slice(0, 40).join('\n');
   }
   function add(msg) { lines.push(String(msg).slice(0, 600)); render(); }
+  window.__boxAdd = add;
   const oErr = console.error;
   console.error = function () { add(Array.from(arguments).join(' ')); oErr.apply(console, arguments); };
   window.addEventListener('error', e => add('ERROR: ' + e.message));
@@ -88,10 +89,38 @@ window.fetch = async function (url, options) {
 // of the folder that holds the .bundle files (and catalog_0.1.0.bin / .hash).
 const FLAG_NAME = "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH";
 const REMOTE_BASE = new URL("StreamingAssets/aa/WebGL", location.href).href;
-const FLAG_VALUE = REMOTE_BASE;
-// If the game still says "Can't get version dependent remote addressables path",
-// try this line instead of the one above:
-// const FLAG_VALUE = JSON.stringify({ "1_4": REMOTE_BASE });
+// We do not know exactly how the original stores this value, so the page tries
+// several formats by itself. If the game says "Can't get version dependent remote
+// addressables path", the page reloads and tries the next format (up to 6 tries).
+// You can also force one by adding ?fmt=1 (or 2, 3...) to the end of the web address.
+const FORMATS = [
+  u => u,                                  // 0: plain address
+  u => JSON.stringify({ "1_4": u }),       // 1: {"1_4":"address"}
+  u => '1_4=' + u,                         // 2: 1_4=address
+  u => '1_4|' + u,                         // 3: 1_4|address
+  u => '1_4;' + u,                         // 4: 1_4;address
+  u => JSON.stringify([{ "1_4": u }])      // 5: [{"1_4":"address"}]
+];
+let fmt = 0;
+try {
+  const q = new URLSearchParams(location.search).get('fmt');
+  fmt = parseInt(q !== null ? q : (sessionStorage.getItem('fmt') || '0'), 10) || 0;
+} catch (e) {}
+fmt = Math.min(Math.max(fmt, 0), FORMATS.length - 1);
+const FLAG_VALUE = FORMATS[fmt](REMOTE_BASE);
+if (window.__boxAdd) window.__boxAdd('Flag format in use: ' + fmt + '  value: ' + FLAG_VALUE);
+
+const _prevConsoleError = console.error;
+console.error = function () {
+  const m = Array.from(arguments).join(' ');
+  if (m.indexOf("Can't get version dependent") !== -1 && fmt + 1 < FORMATS.length) {
+    setTimeout(function () {
+      try { sessionStorage.setItem('fmt', String(fmt + 1)); } catch (e) {}
+      location.href = location.pathname + '?fmt=' + (fmt + 1);
+    }, 2500);
+  }
+  _prevConsoleError.apply(console, arguments);
+};
 
 // ---------- Fake Yandex Games, same variables and functions the original page has ----------
 const NO_DATA = 'no data';
