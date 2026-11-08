@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>GMode Port</title>
+<title>GMode Port - Ported by Onyx$oul-1</title>
 <link rel="stylesheet" href="./style.css"/>
 <style>
 canvas:focus { outline: none; }
 html, body { padding: 0; margin: 0; overflow: hidden; overscroll-behavior: none; user-select: none; height: 100%; background: #000; }
+.credit { position: absolute; bottom: 15px; right: 15px; color: rgba(255,255,255,0.4); font-family: monospace; font-size: 14px; font-weight: bold; z-index: 9999; pointer-events: none; }
 </style>
 
 <!-- Shows errors on screen with a Copy button (delete this block when the game works) -->
@@ -83,10 +84,11 @@ window.fetch = async function (url, options) {
   </div>
 </div>
 
+<!-- YOUR BRANDING ADDED HERE -->
+<div class="credit">Ported by Onyx$oul-1</div>
+
 <script>
 // ---------- The settings the original game gets from Yandex ("flags") ----------
-// The game reads its file address from a flag named VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_4
-// (the last part is the game version). Here it points to YOUR folder instead of Yandex's server.
 const REMOTE_BASE = new URL("StreamingAssets/aa/WebGL", location.href).href;
 const FLAGS = {
   "MOBILE_TOUCH_PANEL_Y_AXIS_MULTIPLIER": "0.5",
@@ -108,7 +110,6 @@ const FLAGS = {
   "VERSION_DEPENDENT_REMOTE_ADDRESSABLES_PATH_1_4": REMOTE_BASE
 };
 
-// ---------- Fake Yandex Games, same variables and functions the original page has ----------
 const NO_DATA = 'no data';
 const SAVE_KEY = 'gmode_saves';
 let ysdk = null, initYSDK = false, ygGameInstance = null, initGame = false, isPausedGame = false;
@@ -148,7 +149,6 @@ function InitPlayer() {
 }
 function OpenAuthDialog() { LogStyledMessage('Login is not available in this port'); }
 
-// Saves are kept in this browser instead of on Yandex
 function SaveCloud(jsonData) { try { localStorage.setItem(SAVE_KEY, jsonData); } catch (e) {} }
 function LoadCloud() {
   let res = NO_DATA;
@@ -178,7 +178,6 @@ function fakeYandexInit() {
   LogStyledMessage('Fake Yandex SDK ready. Files are loaded from: ' + REMOTE_BASE);
 }
 
-// ---------- Start the game ----------
 const canvas = document.querySelector('#unity-canvas');
 const loadingCover = document.querySelector('#loading-cover');
 const barEmpty = document.querySelector('#unity-progress-bar-empty');
@@ -197,7 +196,6 @@ window.addEventListener('blur', () => SetVisibility(false));
 window.addEventListener('focus', () => SetVisibility(true));
 window.addEventListener('pointerdown', () => { FocusGame(); SetVisibility(true); });
 
-// Mouse look: try raw mouse input first, fall back to normal if the browser refuses
 const oRequestPointerLock = Element.prototype.requestPointerLock;
 Element.prototype.requestPointerLock = async function (...args) {
   try { (args[0] ||= {}).unadjustedMovement = true; await oRequestPointerLock.apply(this, args); }
