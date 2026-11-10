@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100vw; height:100vh; margin:0; padding:0; background:#0a0c10; color:#fff; font-family:sans-serif; overflow:hidden;">
+      
+      <!-- Background effect -->
+      <div style="position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(circle at center, rgba(78,201,176,0.15) 0%, transparent 60%); z-index:0;"></div>
+
+      <!-- Main Content -->
+      <div style="position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+        <h1 style="color:#4ec9b0; font-size:4rem; text-shadow:0 0 20px #4ec9b0; margin:0 0 10px 0;">Onyx$oul Hub</h1>
+        <p style="color:#888; font-family:monospace; margin-bottom:50px; font-size:1.2rem;">Ported by Onyx$oul-1</p>
+        
+        <div style="display:flex; gap:20px;">
+            <!-- GMOD PORT LINK -->
+            <a href="https://onyxsoul-1.github.io/GMod-Port/" target="_blank" style="background:#4ec9b0; color:#000; padding:15px 30px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:1.1rem; transition:0.2s; box-shadow:0 0 15px rgba(78,201,176,0.4);">Play GMode</a>
+        </div>
+      </div>
+
+    </div>
+  </foreignObject>
+</svg>
