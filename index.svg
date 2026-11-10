@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100vw; height:100vh; margin:0; padding:0; background:#000; overflow:hidden;">
+      
+      <!-- This loads the game directly -->
+      <iframe 
+        src="https://onyxsoul-1.github.io/GMod-Port/" 
+        style="width:100vw; height:100vh; border:none; display:block; margin:0; padding:0;" 
+        allowfullscreen="true" 
+        allow="autoplay; fullscreen; gamepad; clipboard-read; clipboard-write">
+      </iframe>
+
+    </div>
+  </foreignObject>
+</svg>
